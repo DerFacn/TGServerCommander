@@ -30,7 +30,6 @@ async def fetch_api(endpoint, method="GET", json_data=None, params=None):
     except Exception as e:
         return {"error": "server error", "details": str(e)}
 
-# Виправлена функція: тепер вона розуміє, що успішні ринки/замовлення - це списки
 def check_link(res):
     if isinstance(res, list):
         return True
@@ -42,15 +41,16 @@ async def cmd_start(message: types.Message):
         "👋 Вітаю! Я бот маркету.\n\n"
         "Щоб користуватись ботом, прив'яжіть акаунт:\n"
         "1. Зайдіть на сервер Minecraft.\n"
-        "2. Напишіть `/tg link`.\n"
-        "3. Надішліть мені код командою `/link <code>`."
+        "2. Напишіть <code>/tg link</code>.\n"
+        "3. Надішліть мені код командою <code>/link &lt;код&gt;</code>.",
+        parse_mode="HTML"
     )
 
 @dp.message(Command("link"))
 async def cmd_link(message: types.Message):
     args = message.text.split()
     if len(args) != 2:
-        await message.answer("Використання: `/link <код>`", parse_mode="Markdown")
+        await message.answer("Використання: <code>/link &lt;код&gt;</code>", parse_mode="HTML")
         return
     
     res = await fetch_api("/link", "POST", {"telegram_id": message.from_user.id, "code": args[1]})
@@ -62,7 +62,7 @@ async def cmd_balance(message: types.Message):
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт (/start)")
     if isinstance(res, dict) and "error" in res: return await message.answer("Помилка з'єднання з сервером.")
     
-    await message.answer(f"💰 Ваш віртуальний баланс: {res['balance']} ізумрудів.")
+    await message.answer(f"💰 Ваш віртуальний баланс: <b>{res['balance']}</b> ізумрудів.", parse_mode="HTML")
 
 @dp.message(Command("market"))
 async def cmd_market(message: types.Message):
@@ -74,10 +74,10 @@ async def cmd_market(message: types.Message):
         await message.answer("Маркет порожній.")
         return
 
-    text = "🛒 **Товари на маркеті:**\n\n"
+    text = "🛒 <b>Товари на маркеті:</b>\n\n"
     for item in res[:20]:
-        text += f"▪️ **{item['item']}** | Ціна: {item['price']} | Продавець: {item['seller']}\n"
-    await message.answer(text, parse_mode="Markdown")
+        text += f"▪️ <b>{item['item']}</b> | Ціна: {item['price']} | Продавець: <code>{item['seller']}</code>\n"
+    await message.answer(text, parse_mode="HTML")
 
 @dp.message(Command("orders"))
 async def cmd_orders(message: types.Message):
@@ -87,11 +87,11 @@ async def cmd_orders(message: types.Message):
     
     if not res: return await message.answer("Замовлень немає.")
 
-    text = "📋 **Активні замовлення:**\n\n"
+    text = "📋 <b>Активні замовлення:</b>\n\n"
     for req in res[:20]:
-        text += f"▪️ **{req['material']}** | Ціна: {req['price']} | Замовив: {req['customer']}\n"
-    text += "\n*(Щоб виконати замовлення, зайдіть у гру та відкрийте /orders)*"
-    await message.answer(text, parse_mode="Markdown")
+        text += f"▪️ <b>{req['material']}</b> | Ціна: {req['price']} | Замовив: <code>{req['customer']}</code>\n"
+    text += "\n<i>(Щоб виконати замовлення, зайдіть у гру та відкрийте /orders)</i>"
+    await message.answer(text, parse_mode="HTML")
 
 @dp.message(Command("myorders"))
 async def cmd_myorders(message: types.Message):
@@ -105,7 +105,7 @@ async def cmd_myorders(message: types.Message):
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="❌ Скасувати", callback_data=f"cancel_{req['id']}")]
         ])
-        await message.answer(f"📦 Замовлення: **{req['material']}**\nНагорода: {req['price']} ізумрудів", reply_markup=kb, parse_mode="Markdown")
+        await message.answer(f"📦 Замовлення: <b>{req['material']}</b>\nНагорода: {req['price']} ізумрудів", reply_markup=kb, parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("cancel_"))
 async def callback_cancel(callback: types.CallbackQuery):
@@ -121,7 +121,7 @@ async def callback_cancel(callback: types.CallbackQuery):
 async def cmd_order(message: types.Message):
     args = message.text.split()
     if len(args) != 5:
-        await message.answer("Використання: `/order <предмет> <кількість> <ціна> <днів>`", parse_mode="Markdown")
+        await message.answer("Використання: <code>/order &lt;предмет&gt; &lt;кількість&gt; &lt;ціна&gt; &lt;днів&gt;</code>", parse_mode="HTML")
         return
     
     try:
@@ -141,7 +141,7 @@ async def cmd_order(message: types.Message):
 async def cmd_send(message: types.Message):
     args = message.text.split()
     if len(args) != 3:
-        return await message.answer("Використання: `/send <нік> <сума>`", parse_mode="Markdown")
+        return await message.answer("Використання: <code>/send &lt;нік&gt; &lt;сума&gt;</code>", parse_mode="HTML")
     
     try:
         data = {
