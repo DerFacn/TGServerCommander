@@ -100,7 +100,7 @@ async def cmd_market(message: types.Message):
     for item in res:
         text += f"▪️ ID: <code>{item['id']}</code> | <b>{item['item']}</b> | Ціна: {item['price']} | Продавець: <code>{item['seller']}</code>\n"
     
-    if len(res) == 40:
+    if len(res) == 20:
         text += f"\n<i>Наступна сторінка:</i> <code>/market {page + 1}</code>"
 
     await message.answer(text, parse_mode="HTML")
@@ -123,7 +123,7 @@ async def cmd_orders(message: types.Message):
         text += f"▪️ ID: <code>{req['id']}</code> | <b>{req['material']}</b> | Нагорода: {req['price']} | Замовив: <code>{req['customer']}</code>\n"
     
     text += "\n<i>(Щоб виконати замовлення, зайдіть у гру та відкрийте /orders)</i>"
-    if len(res) == 40:
+    if len(res) == 20:
         text += f"\n\n<i>Наступна сторінка:</i> <code>/orders {page + 1}</code>"
 
     await message.answer(text, parse_mode="HTML")
@@ -157,7 +157,7 @@ async def cmd_myorders(message: types.Message):
         text += f"▪️ ID: <code>{req['id']}</code> | <b>{req['material']}</b> | Нагорода: {req['price']} ізумрудів\n"
     
     text += f"\n<i>Для скасування замовлення напишіть:</i>\n<code>/myorders cancel &lt;ID&gt;</code>"
-    if len(res) == 40:
+    if len(res) == 20:
         text += f"\n\n<i>Наступна сторінка:</i> <code>/myorders {page + 1}</code>"
 
     await message.answer(text, parse_mode="HTML")
