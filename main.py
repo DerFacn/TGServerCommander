@@ -16,18 +16,24 @@ dp = Dispatcher()
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
 async def fetch_api(endpoint, method="GET", json_data=None, params=None):
-    async with aiohttp.ClientSession() as session:
-        url = f"{API_URL}{endpoint}"
-        if method == "GET":
-            async with session.get(url, headers=headers, params=params) as resp:
-                if resp.status == 403: return {"error": "not_linked"}
-                return await resp.json()
-        else:
-            async with session.post(url, headers=headers, json=json_data) as resp:
-                if resp.status == 403: return {"error": "not_linked"}
-                return await resp.json()
+    try:
+        async with aiohttp.ClientSession() as session:
+            url = f"{API_URL}{endpoint}"
+            if method == "GET":
+                async with session.get(url, headers=headers, params=params) as resp:
+                    if resp.status == 403: return {"error": "not_linked"}
+                    return await resp.json()
+            else:
+                async with session.post(url, headers=headers, json=json_data) as resp:
+                    if resp.status == 403: return {"error": "not_linked"}
+                    return await resp.json()
+    except Exception as e:
+        return {"error": "server error", "details": str(e)}
 
+# Виправлена функція: тепер вона розуміє, що успішні ринки/замовлення - це списки
 def check_link(res):
+    if isinstance(res, list):
+        return True
     return res.get("error") != "not_linked"
 
 @dp.message(Command("start"))
@@ -54,19 +60,22 @@ async def cmd_link(message: types.Message):
 async def cmd_balance(message: types.Message):
     res = await fetch_api("/balance", params={"tg_id": message.from_user.id})
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт (/start)")
+    if isinstance(res, dict) and "error" in res: return await message.answer("Помилка з'єднання з сервером.")
+    
     await message.answer(f"💰 Ваш віртуальний баланс: {res['balance']} ізумрудів.")
 
 @dp.message(Command("market"))
 async def cmd_market(message: types.Message):
     res = await fetch_api("/market", params={"tg_id": message.from_user.id})
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт!")
+    if isinstance(res, dict) and "error" in res: return await message.answer("Помилка завантаження маркету.")
     
     if not res:
         await message.answer("Маркет порожній.")
         return
 
     text = "🛒 **Товари на маркеті:**\n\n"
-    for item in res[:20]: # Показуємо перші 20
+    for item in res[:20]:
         text += f"▪️ **{item['item']}** | Ціна: {item['price']} | Продавець: {item['seller']}\n"
     await message.answer(text, parse_mode="Markdown")
 
@@ -74,6 +83,7 @@ async def cmd_market(message: types.Message):
 async def cmd_orders(message: types.Message):
     res = await fetch_api("/orders", params={"tg_id": message.from_user.id})
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт!")
+    if isinstance(res, dict) and "error" in res: return await message.answer("Помилка завантаження замовлень.")
     
     if not res: return await message.answer("Замовлень немає.")
 
@@ -87,6 +97,7 @@ async def cmd_orders(message: types.Message):
 async def cmd_myorders(message: types.Message):
     res = await fetch_api("/myorders", params={"tg_id": message.from_user.id})
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт!")
+    if isinstance(res, dict) and "error" in res: return await message.answer("Помилка завантаження ваших замовлень.")
     
     if not res: return await message.answer("У вас немає замовлень.")
 
