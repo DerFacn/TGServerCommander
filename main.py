@@ -152,43 +152,24 @@ async def callback_toggle(callback: types.CallbackQuery):
 async def cmd_market(message: types.Message):
     args = message.text.split()
     page = 1
-    filter_str = None
-    
-    if len(args) > 1:
-        if args[-1].isdigit():
-            page = int(args[-1])
-            if len(args) > 2:
-                filter_str = " ".join(args[1:-1])
-        else:
-            filter_str = " ".join(args[1:])
+    if len(args) == 2 and args[1].isdigit():
+        page = int(args[1])
 
-    params = {"tg_id": message.from_user.id, "page": page - 1}
-    if filter_str:
-        params["filter"] = filter_str
-
-    res = await fetch_api("/market", params=params)
+    res = await fetch_api("/market", params={"tg_id": message.from_user.id, "page": page - 1})
     if not check_link(res): return await message.answer("Спочатку прив'яжіть акаунт!")
     if isinstance(res, dict) and "error" in res: return await message.answer("Помилка завантаження маркету.")
     
-    items = res.get("items", [])
-    total = res.get("total_filtered", 0)
-    
-    if not items:
-        return await message.answer(f"За вашим запитом нічого не знайдено (Сторінка {page}).")
+    # Оскільки плагін поки що повертає звичайний список, ми працюємо з ним напряму
+    if not res:
+        return await message.answer(f"Маркет порожній на сторінці {page}.")
 
-    filter_text = f"\n🔍 Фільтр: <code>{filter_str}</code>" if filter_str else ""
-    text = f"🛒 <b>Товари на маркеті{filter_text} (Сторінка {page}):</b>\n\n"
+    text = f"🛒 <b>Товари на маркеті (Сторінка {page}):</b>\n\n"
+    for item in res:
+        text += f"▪️ ID: <code>{item['id']}</code> | <b>{item['item']}</b> | Ціна: {item['price']} | Продавець: <code>{item['seller']}</code>\n"
     
-    for item in items:
-        star = " *" if item.get("has_details") else ""
-        text += f"▪️ ID: <code>{item['id']}</code> | <b>{item['item']}{star}</b> | Ціна: {item['price']} | Продавець: <code>{item['seller']}</code>\n"
-    
-    if total > page * 40:
-        cmd_suffix = f" {filter_str} {page + 1}" if filter_str else f" {page + 1}"
-        text += f"\n<i>Наступна сторінка:</i> <code>/market{cmd_suffix}</code>"
-        
-    text += "\n\n<i>ℹ️ Зірочкою (*) позначено предмети з чарами або ефектами. Для перегляду використовуйте /details &lt;id&gt;</i>"
-    
+    if len(res) == 40:
+        text += f"\n<i>Наступна сторінка:</i> <code>/market {page + 1}</code>"
+
     await message.answer(text, parse_mode="HTML")
 
 @dp.message(Command("details"))
